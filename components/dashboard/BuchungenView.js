@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Image as ImageIcon, FileText } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { formatBookingDate, relativeTime } from '@/lib/format';
 import StatusPill from '@/components/ui/StatusPill';
 
@@ -10,17 +10,15 @@ export default function BuchungenView({ workshopSlug }) {
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   async function fetchBookings(silent = false) {
     try {
       const res = await fetch('/api/bookings', { cache: 'no-store' });
       const data = await res.json();
       setBookings(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }
 
   async function updateStatus(id, status) {
@@ -31,8 +29,25 @@ export default function BuchungenView({ workshopSlug }) {
         body: JSON.stringify({ id, status }),
       });
       fetchBookings(true);
+    } catch (e) { alert('Fehler: ' + e.message); }
+  }
+
+  async function openPreview(bookingId) {
+    setPreviewLoading(true);
+    setPreviewUrl('loading');
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/registration-image`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const { url } = await res.json();
+      setPreviewUrl(url);
     } catch (e) {
-      alert('Fehler: ' + e.message);
+      alert('Bild kann nicht geladen werden: ' + e.message);
+      setPreviewUrl(null);
+    } finally {
+      setPreviewLoading(false);
     }
   }
 
@@ -92,9 +107,7 @@ export default function BuchungenView({ workshopSlug }) {
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 {['Status', 'Kunde', 'Fahrzeug', 'Schein', 'Leistung', 'Wunschtermin', 'Eingang', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                    {h}
-                  </th>
+                  <th key={h} className="text-left px-5 py-3 text-[10px] uppercase tracking-widest text-slate-500 font-bold">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -115,12 +128,12 @@ export default function BuchungenView({ workshopSlug }) {
                   <td className="px-5 py-3">
                     <p className="text-sm font-semibold text-slate-700">{b.vehicle || '—'}</p>
                     <p className="text-[11px] text-slate-500 font-mono">{b.license_plate}</p>
-                    {b.vin && <p className="text-[10px] text-slate-400 font-mono">FIN: {b.vin.slice(-6)}</p>}
+                    {b.vin && <p className="text-[10px] text-slate-400 font-mono">FIN ...{b.vin.slice(-6)}</p>}
                   </td>
                   <td className="px-5 py-3">
                     {b.vehicle_registration_url ? (
-                      <button onClick={() => setPreviewUrl(b.vehicle_registration_url)}
-                        className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                      <button onClick={() => openPreview(b.id)} disabled={previewLoading}
+                        className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40">
                         <ImageIcon className="w-3.5 h-3.5" /> ansehen
                       </button>
                     ) : (
@@ -157,8 +170,14 @@ export default function BuchungenView({ workshopSlug }) {
         <div onClick={() => setPreviewUrl(null)}
           className="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 cursor-pointer">
           <div className="bg-white rounded-2xl p-3 max-w-3xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <img src={previewUrl} alt="Fahrzeugschein" className="max-w-full h-auto rounded" />
-            <p className="text-xs text-slate-500 mt-2 px-2 font-medium">Klick außerhalb zum Schließen</p>
+            {previewUrl === 'loading' ? (
+              <div className="p-12 text-center text-slate-500 font-bold">Lade Bild...</div>
+            ) : (
+              <>
+                <img src={previewUrl} alt="Fahrzeugschein" className="max-w-full h-auto rounded" />
+                <p className="text-xs text-slate-500 mt-2 px-2 font-medium">Klick außerhalb zum Schließen · Link läuft nach 5 Min ab</p>
+              </>
+            )}
           </div>
         </div>
       )}

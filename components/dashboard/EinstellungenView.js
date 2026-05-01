@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Check, Mail, Phone, Globe, MapPin, Palette, Clock, Building2, Award } from 'lucide-react';
+import { Save, Check, Mail, Phone, Globe, MapPin, Palette, Clock, Building2, Award, Shield } from 'lucide-react';
 
 const PLANS = {
   free:     { label: 'Free',     color: 'bg-slate-100 text-slate-700',     desc: 'Beta-Tester · 100 Fahrzeuge · 30 SMS/Monat' },
@@ -30,9 +30,7 @@ export default function EinstellungenView({ initial }) {
   const [savedAt, setSavedAt] = useState(null);
   const [error, setError] = useState(null);
 
-  function update(field, value) {
-    setData(prev => ({ ...prev, [field]: value }));
-  }
+  function update(field, value) { setData(prev => ({ ...prev, [field]: value })); }
 
   function updateHours(dayKey, field, value) {
     setData(prev => {
@@ -47,25 +45,18 @@ export default function EinstellungenView({ initial }) {
   }
 
   async function save() {
-    setSaving(true);
-    setError(null);
+    setSaving(true); setError(null);
     try {
       const res = await fetch('/api/workshops/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: data.name,
-          street: data.street,
-          postal_code: data.postal_code,
-          city: data.city,
-          email: data.email,
-          phone: data.phone,
-          website_url: data.website_url,
-          owner_name: data.owner_name,
-          vat_id: data.vat_id,
-          logo_url: data.logo_url,
-          primary_color: data.primary_color,
+          name: data.name, street: data.street, postal_code: data.postal_code, city: data.city,
+          email: data.email, phone: data.phone, website_url: data.website_url,
+          owner_name: data.owner_name, vat_id: data.vat_id,
+          logo_url: data.logo_url, primary_color: data.primary_color,
           opening_hours: data.opening_hours,
+          data_minimal_mode: data.data_minimal_mode,
         }),
       });
       if (!res.ok) {
@@ -75,14 +66,13 @@ export default function EinstellungenView({ initial }) {
       const updated = await res.json();
       setData(prev => ({ ...prev, ...updated }));
       setSavedAt(new Date());
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
   }
 
   const planInfo = PLANS[data.plan] || PLANS.free;
+  const inputCls = 'w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none focus:bg-white transition text-sm font-medium';
+  const labelCls = 'text-xs uppercase tracking-wider text-slate-500 font-bold';
 
   return (
     <div className="px-5 lg:px-8 py-6 lg:py-8 max-w-5xl">
@@ -91,99 +81,80 @@ export default function EinstellungenView({ initial }) {
         <h1 className="text-3xl md:text-4xl font-archivo font-black text-slate-900">Einstellungen</h1>
       </div>
 
-      {/* ====== ABO ====== */}
       <Section icon={Award} title="Abo & Plan">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-bold ${planInfo.color}`}>
-              {planInfo.label}
-            </span>
+            <span className={`px-3 py-1 rounded-full text-sm font-bold ${planInfo.color}`}>{planInfo.label}</span>
             <p className="text-sm text-slate-600 font-medium">{planInfo.desc}</p>
           </div>
-          <a href="mailto:hi@werkstattloop.de?subject=Plan-Upgrade%20Anfrage" className="text-sm font-bold text-orange-600 hover:text-orange-700">
+          <a href="mailto:hi@werkstattloop.de?subject=Plan-Upgrade" className="text-sm font-bold text-orange-600 hover:text-orange-700">
             Plan ändern →
           </a>
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-100">
-          <p className="text-xs text-slate-500 font-medium">
-            Du bist als Beta-Tester im <strong>Pilot-Plan</strong> — alle Features sind kostenlos verfügbar.
-            Wenn du regelhaft buchst, sprechen wir vor dem Übergang zu einem zahlenden Plan kurz miteinander.
-          </p>
-        </div>
       </Section>
 
-      {/* ====== STAMMDATEN ====== */}
       <Section icon={Building2} title="Werkstatt-Profil">
-        <Field label="Name der Werkstatt" required>
+        <Field label="Name der Werkstatt" required labelCls={labelCls}>
           <input type="text" value={data.name || ''} onChange={e => update('name', e.target.value)} className={inputCls} />
         </Field>
-
         <div className="grid md:grid-cols-2 gap-3">
-          <Field label="Inhaber / Geschäftsführer">
+          <Field label="Inhaber" labelCls={labelCls}>
             <input type="text" value={data.owner_name || ''} onChange={e => update('owner_name', e.target.value)} className={inputCls} placeholder="Josef Müller" />
           </Field>
-          <Field label="USt-IdNr (optional)">
+          <Field label="USt-IdNr (optional)" labelCls={labelCls}>
             <input type="text" value={data.vat_id || ''} onChange={e => update('vat_id', e.target.value)} className={inputCls + ' font-mono'} placeholder="DE123456789" />
           </Field>
         </div>
-
         <div>
-          <label className={labelCls}>URL des Profils im Buchungs-Widget</label>
+          <label className={labelCls}>URL des Buchungs-Profils</label>
           <div className="mt-1.5 flex items-center bg-slate-100 rounded-lg overflow-hidden">
             <span className="px-3 py-2.5 text-xs font-mono text-slate-500">/r/</span>
             <input type="text" value={data.slug || ''} disabled className="flex-1 px-2 py-2.5 bg-slate-100 font-mono text-sm text-slate-700" />
           </div>
-          <p className="text-[10px] text-slate-500 mt-1 font-medium">Slug kann nur durch den Support geändert werden.</p>
+          <p className="text-[10px] text-slate-500 mt-1 font-medium">Slug ändert nur der Support, weil sonst bestehende Buchungs-Links brechen.</p>
         </div>
       </Section>
 
-      {/* ====== KONTAKT ====== */}
       <Section icon={MapPin} title="Adresse & Kontakt">
-        <Field label="Straße + Hausnummer">
+        <Field label="Straße + Hausnummer" labelCls={labelCls}>
           <input type="text" value={data.street || ''} onChange={e => update('street', e.target.value)} className={inputCls} placeholder="Moltkestraße 1" />
         </Field>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="PLZ" cols={1}>
+          <Field label="PLZ" labelCls={labelCls}>
             <input type="text" value={data.postal_code || ''} onChange={e => update('postal_code', e.target.value)} className={inputCls} placeholder="34225" />
           </Field>
           <div className="col-span-2">
-            <Field label="Ort">
+            <Field label="Ort" labelCls={labelCls}>
               <input type="text" value={data.city || ''} onChange={e => update('city', e.target.value)} className={inputCls} placeholder="Baunatal" />
             </Field>
           </div>
         </div>
-
         <div className="grid md:grid-cols-2 gap-3">
-          <Field label="Telefon" icon={Phone}>
+          <Field label="Telefon" icon={Phone} labelCls={labelCls}>
             <input type="tel" value={data.phone || ''} onChange={e => update('phone', e.target.value)} className={inputCls} placeholder="05601 87652" />
           </Field>
-          <Field label="E-Mail" icon={Mail}>
+          <Field label="E-Mail" icon={Mail} labelCls={labelCls}>
             <input type="email" value={data.email || ''} onChange={e => update('email', e.target.value)} className={inputCls} placeholder="info@werkstatt.de" />
           </Field>
         </div>
-
-        <Field label="Eigene Webseite (URL)" icon={Globe}>
-          <input type="url" value={data.website_url || ''} onChange={e => update('website_url', e.target.value)} className={inputCls} placeholder="https://juppsgarage-baunatal.de" />
+        <Field label="Eigene Webseite" icon={Globe} labelCls={labelCls}>
+          <input type="url" value={data.website_url || ''} onChange={e => update('website_url', e.target.value)} className={inputCls} placeholder="https://..." />
         </Field>
       </Section>
 
-      {/* ====== BRANDING ====== */}
       <Section icon={Palette} title="Branding">
-        <Field label="Logo-URL (extern gehostet)">
-          <input type="url" value={data.logo_url || ''} onChange={e => update('logo_url', e.target.value)} className={inputCls} placeholder="https://example.com/logo.png" />
+        <Field label="Logo-URL (extern)" labelCls={labelCls}>
+          <input type="url" value={data.logo_url || ''} onChange={e => update('logo_url', e.target.value)} className={inputCls} placeholder="https://...logo.png" />
         </Field>
-        <p className="text-[10px] text-slate-500 -mt-1 font-medium">Logo-Upload kommt in Kürze — fürs Erste eine extern gehostete URL eintragen.</p>
-
-        <Field label="Primärfarbe">
+        <Field label="Primärfarbe" labelCls={labelCls}>
           <div className="flex items-center gap-3">
             <input type="color" value={data.primary_color || '#dc2626'} onChange={e => update('primary_color', e.target.value)} className="w-12 h-10 rounded border border-slate-200 cursor-pointer" />
-            <input type="text" value={data.primary_color || ''} onChange={e => update('primary_color', e.target.value)} className={inputCls + ' font-mono w-32'} placeholder="#dc2626" />
-            <span className="text-xs text-slate-500 font-medium">Wird im Bonusheft & Buchungs-Widget verwendet.</span>
+            <input type="text" value={data.primary_color || ''} onChange={e => update('primary_color', e.target.value)} className={inputCls + ' font-mono w-32'} />
+            <span className="text-xs text-slate-500 font-medium">Wird in Buchungs-Page & Bonusheft verwendet.</span>
           </div>
         </Field>
       </Section>
 
-      {/* ====== ÖFFNUNGSZEITEN ====== */}
       <Section icon={Clock} title="Öffnungszeiten">
         <div className="space-y-2">
           {DAYS.map(d => {
@@ -209,12 +180,30 @@ export default function EinstellungenView({ initial }) {
         </div>
       </Section>
 
-      {/* ====== SAVE BAR ====== */}
+      <Section icon={Shield} title="Datenschutz">
+        <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-slate-50 transition">
+          <input type="checkbox" checked={data.data_minimal_mode === true}
+            onChange={e => update('data_minimal_mode', e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded" />
+          <div>
+            <p className="text-sm font-bold text-slate-900">Datenminimal-Modus</p>
+            <p className="text-xs text-slate-600 font-medium mt-1">
+              Wenn aktiv, werden Fahrzeugschein-Bilder nach der OCR-Analyse <strong>sofort gelöscht</strong>.
+              Nur die extrahierten Felder (Kennzeichen, FIN, etc.) bleiben in der Datenbank.
+              Maximaler Datenschutz, aber: bei der Annahme im Betrieb hast du das Original-Foto nicht mehr zur Verfügung.
+            </p>
+            {data.data_minimal_mode && (
+              <p className="text-xs text-emerald-700 font-bold mt-2">✓ Aktiv — Bilder werden nicht gespeichert</p>
+            )}
+          </div>
+        </label>
+      </Section>
+
       <div className="sticky bottom-4 mt-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-lg flex items-center justify-between gap-4 flex-wrap">
         <div className="text-xs text-slate-500 font-medium">
           {savedAt && (
             <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
-              <Check className="w-3.5 h-3.5" /> Gespeichert · {savedAt.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}
+              <Check className="w-3.5 h-3.5" /> Gespeichert · {savedAt.toLocaleTimeString('de-DE')}
             </span>
           )}
           {error && <span className="text-red-600 font-bold">{error}</span>}
@@ -227,9 +216,6 @@ export default function EinstellungenView({ initial }) {
     </div>
   );
 }
-
-const inputCls = 'w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-lg focus:border-orange-500 focus:outline-none focus:bg-white transition text-sm font-medium';
-const labelCls = 'text-xs uppercase tracking-wider text-slate-500 font-bold';
 
 function Section({ icon: Icon, title, children }) {
   return (
@@ -245,7 +231,7 @@ function Section({ icon: Icon, title, children }) {
   );
 }
 
-function Field({ label, required, icon: Icon, children, cols }) {
+function Field({ label, required, icon: Icon, children, labelCls }) {
   return (
     <div>
       <label className={labelCls + (Icon ? ' flex items-center gap-1.5' : '')}>

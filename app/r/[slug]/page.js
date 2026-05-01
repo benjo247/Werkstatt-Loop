@@ -14,8 +14,10 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function PublicBookingPage({ params }) {
+export default async function PublicBookingPage({ params, searchParams }) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const embed = sp?.embed === '1';
 
   const rows = await sql`
     SELECT slug, name, primary_color, logo_url, phone, email,
@@ -27,5 +29,5 @@ export default async function PublicBookingPage({ params }) {
 
   if (rows.length === 0) notFound();
 
-  return <BookingFlow workshop={rows[0]} />;
+  return <BookingFlow workshop={rows[0]} embed={embed} />;
 }

@@ -1,6 +1,6 @@
 {
   "name": "werkstattloop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,8 +10,10 @@
     "migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "@clerk/nextjs": "^5.7.0",
     "@neondatabase/serverless": "^0.9.5",
+    "@vercel/blob": "^0.27.0",
     "lucide-react": "^0.460.0",
     "next": "14.2.15",
     "react": "^18.3.1",

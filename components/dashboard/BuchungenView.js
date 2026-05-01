@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Image as ImageIcon, FileText } from 'lucide-react';
 import { formatBookingDate, relativeTime } from '@/lib/format';
 import StatusPill from '@/components/ui/StatusPill';
 
@@ -8,6 +9,7 @@ export default function BuchungenView({ workshopSlug }) {
   const [bookings, setBookings] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   async function fetchBookings(silent = false) {
     try {
@@ -55,17 +57,13 @@ export default function BuchungenView({ workshopSlug }) {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h1 className="text-3xl md:text-4xl font-archivo font-black text-slate-900">Online-Buchungen</h1>
           {workshopSlug && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-medium">Quelle:</span>
-              <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-full font-mono">
-                /api/public/bookings ({workshopSlug})
-              </span>
-            </div>
+            <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-full font-mono">
+              {workshopSlug}
+            </span>
           )}
         </div>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex items-center gap-2 mb-5 overflow-x-auto no-scrollbar">
         {[
           { key: 'all', label: 'Alle' },
@@ -88,13 +86,12 @@ export default function BuchungenView({ workshopSlug }) {
         })}
       </div>
 
-      {/* Tabelle */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                {['Status', 'Kunde', 'Fahrzeug', 'Leistung', 'Wunschtermin', 'Eingang', ''].map(h => (
+                {['Status', 'Kunde', 'Fahrzeug', 'Schein', 'Leistung', 'Wunschtermin', 'Eingang', ''].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
                     {h}
                   </th>
@@ -103,9 +100,9 @@ export default function BuchungenView({ workshopSlug }) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-400 text-sm">Lade...</td></tr>
+                <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-400 text-sm">Lade...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-400 text-sm">
+                <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-400 text-sm">
                   {filter === 'all' ? 'Noch keine Buchungen.' : 'Keine Buchungen mit diesem Status.'}
                 </td></tr>
               ) : filtered.map(b => (
@@ -118,6 +115,17 @@ export default function BuchungenView({ workshopSlug }) {
                   <td className="px-5 py-3">
                     <p className="text-sm font-semibold text-slate-700">{b.vehicle || '—'}</p>
                     <p className="text-[11px] text-slate-500 font-mono">{b.license_plate}</p>
+                    {b.vin && <p className="text-[10px] text-slate-400 font-mono">FIN: {b.vin.slice(-6)}</p>}
+                  </td>
+                  <td className="px-5 py-3">
+                    {b.vehicle_registration_url ? (
+                      <button onClick={() => setPreviewUrl(b.vehicle_registration_url)}
+                        className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700">
+                        <ImageIcon className="w-3.5 h-3.5" /> ansehen
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-400">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-sm font-bold">{b.service}</td>
                   <td className="px-5 py-3 text-sm font-semibold text-slate-700">
@@ -145,9 +153,15 @@ export default function BuchungenView({ workshopSlug }) {
         </div>
       </div>
 
-      <p className="text-xs text-slate-500 mt-4 font-medium">
-        Tipp: Bestätigte Buchungen werden später automatisch in deinen DMS-Werkstattkalender übertragen.
-      </p>
+      {previewUrl && (
+        <div onClick={() => setPreviewUrl(null)}
+          className="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 cursor-pointer">
+          <div className="bg-white rounded-2xl p-3 max-w-3xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <img src={previewUrl} alt="Fahrzeugschein" className="max-w-full h-auto rounded" />
+            <p className="text-xs text-slate-500 mt-2 px-2 font-medium">Klick außerhalb zum Schließen</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

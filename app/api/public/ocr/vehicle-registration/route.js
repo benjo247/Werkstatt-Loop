@@ -10,27 +10,6 @@ export async function OPTIONS() {
   return new Response(null, { status: 200, headers: PUBLIC_CORS });
 }
 
-/**
- * POST /api/public/ocr/vehicle-registration
- *
- * Body (multipart/form-data):
- *   - image: File
- *   - workshop_slug: string
- *   - consent_ocr: "true"     (Pflicht)
- *   - consent_storage: "true" (optional, je nach Werkstatt-Modus)
- *
- * Werkstatt-Modi:
- *   - data_minimal_mode = TRUE: Bild wird NIE gespeichert, nur OCR-Daten kommen zurück
- *   - data_minimal_mode = FALSE: Bei consent_storage=true wird privat in Blob gespeichert
- *
- * Antwort:
- *   {
- *     blob_pathname: string|null,    // private path, kein public URL
- *     extracted: {...},
- *     consent_recorded_at: ISO,
- *     data_minimal: boolean
- *   }
- */
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -131,23 +110,12 @@ ANTWORTE NUR MIT DEM JSON, OHNE MARKDOWN, OHNE ERKLÄRUNG.
       const ext = image.type.split('/')[1] || 'jpg';
       const filename = `fahrzeugscheine/${workshopSlug}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-      // PRIVATE Blob — Zugriff nur über Signed URLs
       const blob = await put(filename, image, {
-        access: 'public', // siehe Notiz unten
+        access: 'public',
         addRandomSuffix: false,
         contentType: mediaType,
       });
 
-      // Wir speichern nur den pathname, nicht die URL.
-      // Das Dashboard generiert beim Anzeigen jedes Mal eine neue Signed URL.
-      // ACHTUNG: Vercel Blob Free-Tier unterstützt aktuell nur 'public'-access.
-      // Wir umgehen das durch:
-      //   1. URLs werden NIE öffentlich aus der DB ausgegeben
-      //   2. Werkstatt-Dashboard fragt /api/bookings/[id]/registration-image,
-      //      das prüft Auth, dann erst gibt's die URL
-      //   3. Filename hat Zufallssuffix → praktisch nicht ratbar
-      //   4. Cron löscht 30 Tage nach Termin
-      // Bei Vercel Blob Pro kann man auf 'private' + signed URLs umstellen.
       blobPathname = blob.url;
     }
 
